@@ -5,14 +5,14 @@ REST `/var/log` reader
 ## Assumptions
 
 * The log files are in `/var/log`
-* The log files are uncompressed text files
-  * Log files that are compressed (e.g. with `gzip` or `bzip2`) are not supported
+* The log files are uncompressed plain text files
+  * Compressed or archived files (`.gz`, `bz2`, `.tar`, `.tgz`) are not supported
 * The log files are sorted by timestamp (oldest first) as it is captured in each log event
 * Log events are separated by a newline character
 
 ## Endpoints
 
-* `GET /api/v1/logs` - Get list of all log files in `/var/log`
+* `GET /api/v1/logs` - Get list of all log files in `/var/log` that this service can read
 * `GET /api/v1/logs/{log}` - Get the contents of the log file specified by `{log}` in `/var/log` (e.g. `/api/v1/logs/messages`)
   <br/>Query Parameters:
   * `n` - Number of lines to return (default: 25)
@@ -23,6 +23,13 @@ REST `/var/log` reader
 
 * [Go](https://golang.org/) - Programming language
 * [HttpRouter](https://github.com/julienschmidt/httprouter) - HTTP request router
+
+## Generation of Sample Input Log Files
+
+Optionally, arbitrarily large fake log files can be generated in json or delimited format to augment any that
+are naturally in `/var/log`.
+
+* See: [GitHub mikebd/go-make-log](https://github.com/mikebd/go-make-log) - Generate fake application log files (e.g. as input to log processors)
 
 ## Running in Docker
 
