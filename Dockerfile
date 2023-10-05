@@ -7,7 +7,8 @@ COPY go.mod ./
 # COPY go.mod go.sum ./
 # RUN go mod download
 
-COPY main/*.go ./main/
+ADD config ./config
+ADD main ./main
 
 RUN go build -o go-read-var-log ./main
 

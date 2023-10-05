@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"go-read-var-log/config"
 	"log"
 	"os"
 )
@@ -9,8 +10,8 @@ import (
 func main() {
 	defer log.Println("Done")
 
-	args := parseArguments()
-	initializeLogging(args.logTimestamps)
+	args := config.ParseArguments()
+	initializeLogging(args.LogTimestamps)
 	validateUsage(args)
 
 	err := run(args)
@@ -20,7 +21,7 @@ func main() {
 	}
 }
 
-func run(args arguments) error {
+func run(args config.Arguments) error {
 	log.Println("Running:", os.Args)
 
 	// TODO: Do something useful here
@@ -37,11 +38,11 @@ func initializeLogging(logTimestamps bool) {
 	log.SetOutput(os.Stdout)
 }
 
-func validateUsage(args arguments) {
+func validateUsage(args config.Arguments) {
 	var invalidUsage bool
 
 	/*
-		if len(args.mandatoryStringArgument) == 0 {
+		if len(args.MandatoryStringArgument) == 0 {
 			invalidUsage = true
 			log.Println("Missing mandatory command line argument: -arg")
 		}
