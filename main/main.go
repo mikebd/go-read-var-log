@@ -12,16 +12,16 @@ func main() {
 
 	args := config.ParseArguments()
 	initializeLogging(args.LogTimestamps)
-	validateUsage(args)
+	validateUsage(&args)
 
-	err := run(args)
+	err := run(&args)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
 }
 
-func run(args config.Arguments) error {
+func run(args *config.Arguments) error {
 	log.Println("Running:", os.Args)
 
 	// TODO: Do something useful here
@@ -38,7 +38,7 @@ func initializeLogging(logTimestamps bool) {
 	log.SetOutput(os.Stdout)
 }
 
-func validateUsage(args config.Arguments) {
+func validateUsage(args *config.Arguments) {
 	var invalidUsage bool
 
 	/*
