@@ -9,6 +9,6 @@ COPY go.mod ./
 
 COPY main/*.go ./main/
 
-RUN go build -o go-playground ./main
+RUN go build -o go-read-var-log ./main
 
-CMD ["./go-playground"]
+CMD ["./go-read-var-log"]
