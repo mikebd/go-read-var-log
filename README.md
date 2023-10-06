@@ -24,6 +24,11 @@ REST `/var/log` reader
 * [Go](https://golang.org/) - Programming language
 * [HttpRouter](https://github.com/julienschmidt/httprouter) - HTTP request router
 
+## Design
+
+* The `service` package contains the logic of the service, agnostic of presentation and transport
+* The `controller` package contains the HTTP request handlers
+
 ## Generation of Sample Input Log Files
 
 Optionally, arbitrarily large fake log files can be generated in json or delimited format to augment any that
