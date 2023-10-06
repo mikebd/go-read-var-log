@@ -9,6 +9,7 @@ REST `/var/log` reader
   * Compressed or archived files (`.gz`, `bz2`, `.tar`, `.tgz`) are not supported
 * The log files are sorted by timestamp (oldest first) as it is captured in each log event
 * Log events are separated by a newline character
+* REST response Content-Type is text/plain; charset=utf-8, regardless of the Accept request header
 
 ## Endpoints
 

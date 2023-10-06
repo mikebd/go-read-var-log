@@ -16,7 +16,6 @@ func ListLogs(directoryPath string) ([]string, error) {
 	/* filter out entries that are not readable or supported */
 	for _, entry := range entries {
 		if validLogForThisService(directoryPath, entry) {
-			println("Adding entry:", entry.Name())
 			result = append(result, entry.Name())
 		}
 	}

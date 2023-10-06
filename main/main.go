@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"go-read-var-log/config"
+	"go-read-var-log/controller/rest"
 	"log"
 	"os"
 )
@@ -24,9 +25,7 @@ func main() {
 func run(args *config.Arguments) error {
 	log.Println("Running:", os.Args)
 
-	// TODO: Do something useful here
-
-	return nil
+	return rest.StartHttpRouter()
 }
 
 func initializeLogging(logTimestamps bool) {
