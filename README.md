@@ -53,8 +53,9 @@ are naturally in `/var/log`.
 
 ## Arguments
 
-| Argument         | Description                           |
-|------------------|---------------------------------------|
-| `-h` \| `--help` | Print the help message                |
-| `-lt`            | Log with timestamps (UTC)             |
-| `-p`             | HTTP Port to listen on (default 8080) |
+| Argument         | Description                            |
+|------------------|----------------------------------------|
+| `-h` \| `--help` | Print the help message                 |
+| `-lt`            | Log with timestamps (UTC)              |
+| `-n`             | Number of lines to return (default 25) |
+| `-p`             | HTTP Port to listen on (default 8080)  |

@@ -7,7 +7,7 @@ import (
 )
 
 // GetLog returns the contents of a log file
-func GetLog(directoryPath string, filename string) ([]string, error) {
+func GetLog(directoryPath string, filename string, maxLines int) ([]string, error) {
 	filepath := strings.Join([]string{directoryPath, filename}, "/")
 
 	if !validLogFromName(directoryPath, filename) {
@@ -19,5 +19,12 @@ func GetLog(directoryPath string, filename string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(string(byteSlice), "\n"), nil
+	result := strings.Split(string(byteSlice), "\n")
+
+	// Restrict output to at most maxLines
+	endIndex := len(result) - 1
+	startIndex := max(0, endIndex-maxLines)
+	result = result[startIndex:endIndex]
+
+	return result, nil
 }
