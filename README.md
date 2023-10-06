@@ -4,12 +4,15 @@ REST `/var/log` reader
 
 ## Assumptions
 
+Some assumptions could be considered TODO items for future enhancement
+
 * The log files are in `/var/log`
 * The log files are uncompressed plain text files
-  * Compressed or archived files (`.gz`, `bz2`, `.tar`, `.tgz`) are not supported
+  * Compressed or archived files (e.g. `.gz`, `bz2`, `.tar`, `.tgz`) are not supported
 * The log files are sorted by timestamp (oldest first) as it is captured in each log event
 * Log events are separated by a newline character
 * REST response Content-Type is text/plain; charset=utf-8, regardless of the Accept request header
+* All errors are returned to REST callers as HTTP status 500, even if these might be correctable by the caller
 
 ## Endpoints
 
