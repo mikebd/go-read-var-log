@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-func validLogForThisService(directoryPath string, entry os.DirEntry) bool {
+// validLogFromDirectoryEntry returns true if the entry can be handled by this service
+func validLogFromDirectoryEntry(directoryPath string, entry os.DirEntry) bool {
 	// Cheaper tests first
 	if entry.IsDir() {
 		return false
@@ -18,6 +19,28 @@ func validLogForThisService(directoryPath string, entry os.DirEntry) bool {
 
 	// More expensive tests last
 	if !isFileReadable(strings.Join([]string{directoryPath, entry.Name()}, "/")) {
+		return false
+	}
+
+	return true
+}
+
+// validLogFromName returns true if the log can be handled by this service
+func validLogFromName(directoryPath string, filename string) bool {
+	filepath := strings.Join([]string{directoryPath, filename}, "/")
+
+	// Cheaper tests first
+	fileinfo, err := os.Stat(filepath)
+	if fileinfo == nil || fileinfo.IsDir() || err != nil {
+		return false
+	}
+
+	if !isFileSupported(filename) {
+		return false
+	}
+
+	// More expensive tests last
+	if !isFileReadable(filepath) {
 		return false
 	}
 
