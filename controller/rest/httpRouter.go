@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-func StartHttpRouter() error {
+func StartHttpRouter(args *config.Arguments) error {
 	router := httprouter.New()
 	router.GET("/api/v1/logs", v1.GetLogs)
-	return http.ListenAndServe(":"+strconv.Itoa(config.HttpPort), router)
+	return http.ListenAndServe(":"+strconv.Itoa(args.HttpPort), router)
 }

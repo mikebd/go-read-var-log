@@ -25,7 +25,7 @@ func main() {
 func run(args *config.Arguments) error {
 	log.Println("Running:", os.Args)
 
-	return rest.StartHttpRouter()
+	return rest.StartHttpRouter(args)
 }
 
 func initializeLogging(logTimestamps bool) {
