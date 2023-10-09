@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"go-read-var-log/config"
 	"go-read-var-log/controller/rest/util"
@@ -9,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"slices"
-	"strconv"
 	"time"
 )
 
@@ -29,24 +27,17 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	logFilename := p.ByName("log")
 
-	maxLines := config.GetArguments().NumberOfLogLines
-	maxLinesParam := r.URL.Query().Get("n")
-	if maxLinesParam != "" {
-		intParam, err := strconv.Atoi(maxLinesParam)
-		if err == nil && intParam > 0 {
-			maxLines = intParam
-		} else {
-			util.RenderTextPlain(w, nil, fmt.Errorf("invalid value for parameter 'n': '%s'", maxLinesParam))
-			return
+	maxLines, _ := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
+	if maxLines > 0 {
+		logEvents, err := service.GetLog(config.LogDirectory, logFilename, maxLines)
+
+		if err == nil {
+			// Reverse the slice - we want the most recent events first.
+			// Tests to see if this is slower than just iterating backwards when rendering
+			// showed that it was not.  This is easier to read for maintainability.
+			slices.Reverse(logEvents)
 		}
+
+		util.RenderTextPlain(w, logEvents, err)
 	}
-
-	logEvents, err := service.GetLog(config.LogDirectory, logFilename, maxLines)
-
-	// Reverse the slice - we want the most recent events first.
-	// Tests to see if this is slower than just iterating backwards when rendering
-	// showed that it was not.  This is easier to read for maintainability.
-	slices.Reverse(logEvents)
-
-	util.RenderTextPlain(w, logEvents, err)
 }
