@@ -13,7 +13,7 @@ Some assumptions could be considered TODO items for future enhancement
 * Log events are separated by a newline character
 * REST response Content-Type is text/plain; charset=utf-8, regardless of the Accept request header
 * All errors are returned to REST callers as HTTP status 500, even if these might be correctable by the caller
-* LRU result caching is not implemented
+* LRU result caching of compiled regexes and search results are not implemented
 
 ## Endpoints
 

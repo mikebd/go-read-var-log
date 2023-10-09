@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -10,16 +11,29 @@ import (
 // GetLog returns the contents of a log file
 // directoryPath: the path to the directory containing the log file
 // filename: the name of the log file
-// textMatch: a string to search for in the log file (case sensitive)
-// maxLines: the maximum number of lines to return
-func GetLog(directoryPath string, filename string, textMatch string, maxLines int) ([]string, error) {
+// textMatch: a string to search for in the log file (case-sensitive, empty string if not required)
+// regex: a compiled regular expression to search for in the log file (nil if not required)
+// maxLines: the maximum number of lines to return (0 for all lines)
+func GetLog(directoryPath string, filename string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
+	// TODO - REFACTOR: Consider a struct to hold the arguments to this function if the number of parameters grows
+
 	filepath := strings.Join([]string{directoryPath, filename}, "/")
 
 	if !validLogFromName(directoryPath, filename) {
 		return nil, fmt.Errorf("invalid, unreadable or unsupported log file '%s'", filepath)
 	}
 
-	// TODO: this is the simplest possible approach.  It will likely not work well for large files.
+	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
+	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
+	//       This will be more efficient for large files, but will be more complex to implement and maintain.
+	//	     On my machine:
+	//	     - First scan of a 1GB file with 10.5 million lines takes ≈ 2-3µs returning all (1) lines matching both
+	//         a textMatch and regex.
+	//       - Subsequent scans of the same file for a different textMatch and regex, returning all (1) matching lines,
+	//         takes ≈ 1-1.3µs.  This is likely due to the file fitting in the filesystem page cache on my system.
+	//           kern.vm_page_free_min: 3500
+	//           kern.vm_page_free_reserved: 912
+	//           kern.vm_page_free_target: 4000
 	byteSlice, err := os.ReadFile(filepath)
 	if err != nil {
 		return nil, err
@@ -27,9 +41,14 @@ func GetLog(directoryPath string, filename string, textMatch string, maxLines in
 	result := strings.Split(string(byteSlice), "\n")
 
 	// Filter out lines that do not match the filters
-	if textMatch != "" {
+	textMatchRequested := textMatch != ""
+	regexMatchRequested := regex != nil
+	if textMatchRequested || regexMatchRequested {
+		// Single pass through the slice for efficiency
 		result = slices.DeleteFunc(result, func(line string) bool {
-			return !strings.Contains(line, textMatch)
+			textMatchFailed := textMatchRequested && !strings.Contains(line, textMatch)
+			regexMatchFailed := regexMatchRequested && !regex.MatchString(line)
+			return textMatchFailed || regexMatchFailed
 		})
 	}
 

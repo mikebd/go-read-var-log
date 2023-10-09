@@ -1,12 +1,14 @@
 package v1
 
 import (
+	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"go-read-var-log/config"
 	"go-read-var-log/controller/rest/util"
 	"go-read-var-log/service"
 	"log"
 	"net/http"
+	"regexp"
 	"slices"
 	"time"
 )
@@ -28,10 +30,20 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	logFilename := p.ByName("log")
 
 	textMatch := r.URL.Query().Get("q")
+	regexPattern := r.URL.Query().Get("r")
+	var regex *regexp.Regexp
+	if regexPattern != "" {
+		regexCompiled, err := regexp.Compile(regexPattern)
+		if err != nil {
+			util.RenderTextPlain(w, nil, fmt.Errorf("invalid regex pattern '%s': %s", regexPattern, err))
+			return
+		}
+		regex = regexCompiled
+	}
 
 	maxLines, _ := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
 	if maxLines >= 0 {
-		logEvents, err := service.GetLog(config.LogDirectory, logFilename, textMatch, maxLines)
+		logEvents, err := service.GetLog(config.LogDirectory, logFilename, textMatch, regex, maxLines)
 
 		if err == nil {
 			// Reverse the slice - we want the most recent events first.
