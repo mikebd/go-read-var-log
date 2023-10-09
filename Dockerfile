@@ -6,8 +6,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 ADD config ./config
+ADD controller ./controller
 ADD main ./main
+ADD service ./service
 
 RUN go build -o go-read-var-log ./main
 
-CMD ["./go-read-var-log"]
+ENTRYPOINT ["./go-read-var-log"]
