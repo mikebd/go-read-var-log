@@ -43,6 +43,10 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	logEvents, err := service.GetLog(config.LogDirectory, logFilename, maxLines)
 
+	// Reverse the slice - we want the most recent events first.
+	// Tests to see if this is slower than just iterating backwards when rendering
+	// showed that it was not.  This is easier to read for maintainability.
 	slices.Reverse(logEvents)
+
 	util.RenderTextPlain(w, logEvents, err)
 }
