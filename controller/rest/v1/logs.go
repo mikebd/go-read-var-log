@@ -10,18 +10,23 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 )
 
 // GetLogs handles GET /api/v1/logs and returns a list of log files in the log directory
-func GetLogs(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
-	log.Println("handling /api/v1/logs")
+func GetLogs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	start := time.Now()
+	defer log.Println(r.URL.RequestURI(), "took", time.Since(start))
+
 	logFilenames, err := service.ListLogs(config.LogDirectory)
 	util.RenderTextPlain(w, logFilenames, err)
 }
 
 // GetLog handles GET /api/v1/logs/{log} and return the contents in reverse order
 func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	log.Println("handling", r.URL.RequestURI())
+	start := time.Now()
+	defer log.Println(r.URL.RequestURI(), "took", time.Since(start))
+
 	logFilename := p.ByName("log")
 
 	maxLines := config.GetArguments().NumberOfLogLines
