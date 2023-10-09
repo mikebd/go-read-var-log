@@ -30,7 +30,7 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	textMatch := r.URL.Query().Get("q")
 
 	maxLines, _ := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
-	if maxLines > 0 {
+	if maxLines >= 0 {
 		logEvents, err := service.GetLog(config.LogDirectory, logFilename, textMatch, maxLines)
 
 		if err == nil {
