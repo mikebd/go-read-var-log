@@ -13,13 +13,14 @@ Some assumptions could be considered TODO items for future enhancement
 * Log events are separated by a newline character
 * REST response Content-Type is text/plain; charset=utf-8, regardless of the Accept request header
 * All errors are returned to REST callers as HTTP status 500, even if these might be correctable by the caller
+* LRU result caching is not implemented
 
 ## Endpoints
 
 * `GET /api/v1/logs` - Get list of all log files in `/var/log` that this service can read
 * `GET /api/v1/logs/{log}` - Get the contents of the log file specified by `{log}` in `/var/log` (e.g. `/api/v1/logs/messages`)
   <br/>Query Parameters:
-  * `n` - Number of lines to return (default: 25)
+  * `n` - Number of lines to return (default: 25, all: 0)
   * `q` - Case sensitive fixed text filter to apply to each line (default: `""`), more performant than `r`
   * `r` - Regex filter to apply to each line (default: `.*`)
 

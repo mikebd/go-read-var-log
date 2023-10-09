@@ -27,9 +27,11 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	logFilename := p.ByName("log")
 
+	textMatch := r.URL.Query().Get("q")
+
 	maxLines, _ := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
 	if maxLines > 0 {
-		logEvents, err := service.GetLog(config.LogDirectory, logFilename, maxLines)
+		logEvents, err := service.GetLog(config.LogDirectory, logFilename, textMatch, maxLines)
 
 		if err == nil {
 			// Reverse the slice - we want the most recent events first.
