@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -25,19 +26,15 @@ func GetLog(directoryPath string, filename string, textMatch string, maxLines in
 	}
 	result := strings.Split(string(byteSlice), "\n")
 
-	// Select lines that match the filters
+	// Filter out lines that do not match the filters
 	if textMatch != "" {
-		filteredResult := make([]string, 0, len(result))
-		for i, line := range result {
-			if strings.Contains(line, textMatch) {
-				filteredResult = append(filteredResult, result[i])
-			}
-		}
-		result = filteredResult
+		result = slices.DeleteFunc(result, func(line string) bool {
+			return !strings.Contains(line, textMatch)
+		})
 	}
 
 	// Restrict output to at most maxLines
-	if maxLines > 0 {
+	if maxLines > 0 && len(result) > maxLines {
 		endIndex := len(result) - 1
 		startIndex := max(0, endIndex-maxLines)
 		result = result[startIndex:endIndex]
