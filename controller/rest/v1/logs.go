@@ -25,7 +25,10 @@ func GetLogs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // GetLog handles GET /api/v1/logs/{log} and return the contents in reverse order
 func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	start := time.Now()
-	defer log.Println(r.URL.RequestURI(), "took", time.Since(start))
+	linesReturned := 0
+	defer func() {
+		log.Println(r.URL.RequestURI(), "returned", linesReturned, "lines in", time.Since(start))
+	}()
 
 	logFilename := p.ByName("log")
 
@@ -41,11 +44,13 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		regex = regexCompiled
 	}
 
-	maxLines, _ := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
-	if maxLines >= 0 {
+	maxLines, err := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
+	if err == nil {
 		logEvents, err := service.GetLog(config.LogDirectory, logFilename, textMatch, regex, maxLines)
 
 		if err == nil {
+			linesReturned = len(logEvents)
+
 			// Reverse the slice - we want the most recent events first.
 			// Tests to see if this is slower than just iterating backwards when rendering
 			// showed that it was not.  This is easier to read for maintainability.
