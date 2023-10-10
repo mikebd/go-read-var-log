@@ -26,8 +26,8 @@ func GetLog(directoryPath string, filename string, textMatch string, regex *rege
 	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
 	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
 	//       This will be more efficient for large files, but will be more complex to implement and maintain.
-	//	     On my machine:
-	//	     - First scan of a 1GB file with 10.5 million lines takes ≈ 2-3µs returning all (1) lines matching both
+	//       On my machine:
+	//       - First scan of a 1GB file with 10.5 million lines takes ≈ 2-3µs returning all (1) lines matching both
 	//         a textMatch and regex.
 	//       - Subsequent scans of the same file for a different textMatch and regex, returning all (1) matching lines,
 	//         takes ≈ 1-1.3µs.  This is likely due to the file fitting in the filesystem page cache on my system.
