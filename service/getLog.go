@@ -23,6 +23,30 @@ func GetLog(directoryPath string, filename string, textMatch string, regex *rege
 		return nil, fmt.Errorf("invalid, unreadable or unsupported log file '%s'", filepath)
 	}
 
+	return selectLogStrategy(filepath)(filepath, textMatch, regex, maxLines)
+}
+
+func selectLogStrategy(filepath string) getLogStrategy {
+	fileinfo, err := os.Stat(filepath)
+	if err != nil {
+		return func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
+			return nil, fmt.Errorf("unable to stat file '%s': %s", filepath, err)
+		}
+	}
+	filesize := fileinfo.Size()
+
+	// TODO: Make this configurable
+	if filesize < 10000000 {
+		return getSmallLog
+	}
+
+	// TODO: Add a strategy for large files
+	return getSmallLog
+}
+
+type getLogStrategy func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error)
+
+func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
 	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
 	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
 	//       This will be more efficient for large files, but will be more complex to implement and maintain.
