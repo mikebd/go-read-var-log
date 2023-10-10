@@ -34,6 +34,9 @@ Some assumptions could be considered TODO items for future enhancement
   * Hot searches could have dedicated caches that are eagerly refreshed when the file changes
 * Testing coverage should be added for the `controller` package
 * Add `GOMAXPROCS` to Dockerfile or set that in the code
+* There is a [get-large-log](https://github.com/mikebd/go-read-var-log/tree/get-large-log) branch where I hope to
+  experiment with a more efficient way to read very large files, but it is not yet complete and is not formally
+  part of this submission
 
 ## Endpoints
 
