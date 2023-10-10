@@ -33,6 +33,7 @@ Some assumptions could be considered TODO items for future enhancement
   * Search result caching would require invalidation when the file changes
   * Hot searches could have dedicated caches that are eagerly refreshed when the file changes
 * Testing coverage should be added for the `controller` package
+* Add `GOMAXPROCS` to Dockerfile or set that in the code
 
 ## Endpoints
 
@@ -84,6 +85,7 @@ are naturally in `/var/log`.
 ## Running Locally
 
 * `go run ./main <args>` - Run the main.go file with the given arguments
+* <b>IMPORTANT</b>: Improve scalability with GOMAXPROCS: `GOMAXPROCS=8 go run ./main <args>`
 
 ## Run Unit Tests Locally
 
@@ -195,6 +197,21 @@ Percentage of the requests served within a certain time (ms)
 ```
 
 ### Large file with fixed text and regex matching
+
+#### Non-default GOMAXPROCS=8
+
+This will take a while to complete.  I hope to update the results here in 1-2 hours (need to step away).
+So far, > 2000 requests have completed, most in < 3 seconds.
+
+```bash
+❯ ab -c 6 -k -n 10000 'localhost/api/v1/logs/1GB-9million.log?q=|error|&r=\sfecig$'
+
+Completed 1000 requests
+Completed 2000 requests
+...
+```
+
+#### Default GOMAXPROCS=1
 
 This fails for `-n 10000` with a timeout, but "succeeds" (with poor performance) for `-n 50`.
 There is a lot of room for optimization here if this is a use case that must be supported.

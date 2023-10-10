@@ -24,7 +24,6 @@ func GetLog(directoryPath string, filename string, textMatch string, regex *rege
 	}
 
 	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
-	//       It does not scale well under concurrent load for a large file (which thrashes the filesystem page cache).
 	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
 	//       This will be more efficient for large files, but will be more complex to implement and maintain.
 	//       On my machine (non-concurrent):
