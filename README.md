@@ -200,15 +200,45 @@ Percentage of the requests served within a certain time (ms)
 
 #### Non-default GOMAXPROCS=8
 
-This will take a while to complete.  I hope to update the results here in 1-2 hours (need to step away).
-So far, > 2000 requests have completed, most in < 3 seconds.
+When run for 10,000 requests, it failed somewhere between 4,000-5,000 requests with a timeout as response times escalated to over 1 minute.
+
+For > 2,000 requests (started as 10,000 but interrupted after 2,000):
 
 ```bash
 ❯ ab -c 6 -k -n 10000 'localhost/api/v1/logs/1GB-9million.log?q=|error|&r=\sfecig$'
 
-Completed 1000 requests
-Completed 2000 requests
-...
+Document Path:          /api/v1/logs/1GB-9million.log?q=|error|&r=\sfecig$
+Document Length:        117 bytes
+
+Concurrency Level:      6
+Time taken for tests:   1036.804 seconds
+Complete requests:      2105
+Failed requests:        0
+Keep-Alive requests:    2105
+Total transferred:      545195 bytes
+HTML transferred:       246285 bytes
+Requests per second:    2.03 [#/sec] (mean)
+Time per request:       2955.261 [ms] (mean)
+Time per request:       492.543 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.51 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:  1905 2946 1771.9   2766   36280
+Waiting:     1905 2946 1771.9   2766   36280
+Total:       1905 2946 1771.9   2766   36280
+
+Percentage of the requests served within a certain time (ms)
+  50%   2766
+  66%   2811
+  75%   2853
+  80%   2885
+  90%   3007
+  95%   3225
+  98%   4481
+  99%   6722
+ 100%  36280 (longest request)
 ```
 
 #### Default GOMAXPROCS=1
