@@ -18,11 +18,12 @@ Some assumptions could be considered TODO items for future enhancement
 ## Endpoints
 
 * `GET /api/v1/logs` - Get list of all log files in `/var/log` that this service can read
-* `GET /api/v1/logs/{log}` - Get the contents of the log file specified by `{log}` in `/var/log` (e.g. `/api/v1/logs/messages`)
+* `GET /api/v1/logs/{log}` - Get the contents of the log file specified by `{log}` in `/var/log` (e.g. `/api/v1/logs/system.log`)
   <br/>Query Parameters:
   * `n` - Number of lines to return (default: 25, all: 0)
   * `q` - Case sensitive fixed text filter to apply to each line (default: `""`), more performant than `r`
   * `r` - Regex filter to apply to each line (default: `.*`)
+  * Note: `q` and `r` may both be specified, but at most once each.  Multiple `q` or `r` parameters are ignored.
 
 ## Enabling Tech Stack
 
@@ -44,9 +45,10 @@ are naturally in `/var/log`.
 ## Running in Docker
 
 * `docker build -t go-read-var-log .` - Build the Docker image
-* `docker run go-read-var-log` - Run without arguments<br/>
-  OR <br/>
-  `docker run go-read-var-log /app/go-read-var-log <args>` - Run with the given arguments
+* `docker run -v /var/log:/var/log:ro -p 80:8080 go-read-var-log <args>` - Run with the given arguments
+  <br/>Prevents writing to `/var/log`.  When run without `<args>`, this enables the following from the docker host:
+  * `curl "localhost/api/v1/logs"`
+  * `curl "localhost/api/v1/logs/system.log?n=10&q=syslog"`
 
 ## Running Locally
 
