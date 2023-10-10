@@ -30,6 +30,8 @@ Some assumptions could be considered TODO items for future enhancement
 * REST response Content-Type is text/plain; charset=utf-8, regardless of the Accept request header
 * All errors are returned to REST callers as HTTP status 500, even if these might be correctable by the caller
 * LRU result caching of compiled regexes and search results are not implemented
+  * Search result caching would require invalidation when the file changes
+  * Hot searches could have dedicated caches that are eagerly refreshed when the file changes
 * Testing coverage should be added for the `controller` package
 
 ## Endpoints
