@@ -16,6 +16,7 @@ REST `/var/log` reader
 * [Sample Output](#sample-output)
   * [Get list of all log files in /var/log](#get-list-of-all-log-files-in-varlog)
   * [Query the contents of a 1GB file with 9.2 million logs](#query-the-contents-of-a-1gb-file-with-92-million-logs)
+* [Benchmark with Apache Bench](#benchmark-with-apache-bench)
 
 ## Assumptions
 
@@ -144,4 +145,91 @@ The `curl` output for all of the above is:
 
 ```bash
 2023-10-10T09:27:32.029729Z|error|tesak awehit atep itego anetar utiyav oset h om tulad palopi ac arinem eralo fecig
+```
+
+## Benchmark with Apache Bench
+
+[Apache Bench](https://httpd.apache.org/docs/2.4/programs/ab.html) is a simple HTTP load testing tool.
+
+### Small file
+
+`/var/log/daily.out` is a 419KB file with 6,892 lines.
+
+```bash
+❯ ab -c 6 -k -n 10000 'localhost/api/v1/logs/daily.out'
+
+Document Path:          /api/v1/logs/daily.out
+Document Length:        1765 bytes
+
+Concurrency Level:      6
+Time taken for tests:   3.193 seconds
+Complete requests:      10000
+Failed requests:        0
+Keep-Alive requests:    10000
+Total transferred:      19080000 bytes
+HTML transferred:       17650000 bytes
+Requests per second:    3131.67 [#/sec] (mean)
+Time per request:       1.916 [ms] (mean)
+Time per request:       0.319 [ms] (mean, across all concurrent requests)
+Transfer rate:          5835.18 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     1    2   0.5      2       5
+Waiting:        0    2   0.5      2       5
+Total:          1    2   0.5      2       5
+
+Percentage of the requests served within a certain time (ms)
+  50%      2
+  66%      2
+  75%      2
+  80%      2
+  90%      3
+  95%      3
+  98%      3
+  99%      3
+ 100%      5 (longest request)
+```
+
+### Large file with fixed text and regex matching
+
+This fails for `-n 10000` with a timeout, but "succeeds" (with poor performance) for `-n 50`.
+There is a lot of room for optimization here if this is a use case that must be supported.
+
+```bash
+❯ ab -c 6 -k -n 50 'localhost/api/v1/logs/1GB-9million.log?q=|error|&r=\sfecig$'
+
+Document Path:          /api/v1/logs/1GB-9million.log?q=|error|&r=\sfecig$
+Document Length:        117 bytes
+
+Concurrency Level:      6
+Time taken for tests:   31.893 seconds
+Complete requests:      50
+Failed requests:        0
+Keep-Alive requests:    50
+Total transferred:      12950 bytes
+HTML transferred:       5850 bytes
+Requests per second:    1.57 [#/sec] (mean)
+Time per request:       3827.187 [ms] (mean)
+Time per request:       637.865 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.40 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       0
+Processing:  1832 3469 1508.0   2750    6374
+Waiting:     1832 3469 1508.0   2750    6374
+Total:       1832 3469 1508.0   2750    6374
+
+Percentage of the requests served within a certain time (ms)
+  50%   2750
+  66%   3738
+  75%   5137
+  80%   5368
+  90%   5905
+  95%   6206
+  98%   6374
+  99%   6374
+ 100%   6374 (longest request)
 ```
