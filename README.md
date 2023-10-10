@@ -2,6 +2,21 @@
 
 REST `/var/log` reader
 
+## Contents
+
+* [Assumptions](#assumptions)
+* [Endpoints](#endpoints)
+* [Enabling Tech Stack](#enabling-tech-stack)
+* [Design](#design)
+* [Generation of Sample Input Log Files](#generation-of-sample-input-log-files)
+* [Arguments](#arguments)
+* [Running in Docker](#running-in-docker)
+* [Running Locally](#running-locally)
+* [Run Unit Tests Locally](#run-unit-tests-locally)
+* [Sample Output](#sample-output)
+  * [Get list of all log files in /var/log](#get-list-of-all-log-files-in-varlog)
+  * [Query the contents of a 1GB file with 9.2 million logs](#query-the-contents-of-a-1gb-file-with-92-million-logs)
+
 ## Assumptions
 
 Some assumptions could be considered TODO items for future enhancement
@@ -45,6 +60,15 @@ Optionally, arbitrarily large fake log files can be generated in json or delimit
 are naturally in `/var/log`.
 
 * See: [GitHub mikebd/go-make-log](https://github.com/mikebd/go-make-log) - Generate fake application log files (e.g. as input to log processors)
+
+## Arguments
+
+| Argument         | Description                            |
+|------------------|----------------------------------------|
+| `-h` \| `--help` | Print the help message                 |
+| `-lt`            | Log with timestamps (UTC)              |
+| `-n`             | Number of lines to return (default 25) |
+| `-p`             | HTTP Port to listen on (default 8080)  |
 
 ## Running in Docker
 
@@ -121,12 +145,3 @@ The `curl` output for all of the above is:
 ```bash
 2023-10-10T09:27:32.029729Z|error|tesak awehit atep itego anetar utiyav oset h om tulad palopi ac arinem eralo fecig
 ```
-
-## Arguments
-
-| Argument         | Description                            |
-|------------------|----------------------------------------|
-| `-h` \| `--help` | Print the help message                 |
-| `-lt`            | Log with timestamps (UTC)              |
-| `-n`             | Number of lines to return (default 25) |
-| `-p`             | HTTP Port to listen on (default 8080)  |
