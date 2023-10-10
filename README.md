@@ -14,6 +14,7 @@ Some assumptions could be considered TODO items for future enhancement
 * REST response Content-Type is text/plain; charset=utf-8, regardless of the Accept request header
 * All errors are returned to REST callers as HTTP status 500, even if these might be correctable by the caller
 * LRU result caching of compiled regexes and search results are not implemented
+* Testing coverage should be added for the `controller` package
 
 ## Endpoints
 
@@ -28,6 +29,9 @@ Some assumptions could be considered TODO items for future enhancement
 ## Enabling Tech Stack
 
 * [Go](https://golang.org/) - Programming language
+  * If not installed, consider: `brew install golang` or similar as appropriate for 
+    how you manage packages for development on your OS
+  * Installation is not required if running in Docker
 * [HttpRouter](https://github.com/julienschmidt/httprouter) - HTTP request router
 
 ## Design
@@ -53,6 +57,15 @@ are naturally in `/var/log`.
 ## Running Locally
 
 * `go run ./main <args>` - Run the main.go file with the given arguments
+
+## Run Unit Tests Locally
+
+Tests are implemented in `*_test.go` files in the same package as the code under test.
+Test data files are stored under `testdata` directories, which are ignored by `go build` and `go run`.
+
+* `go test ./... -count=-1` - Run all unit tests
+* `go test ./... -count=-1 -cover` - Run all unit tests with coverage
+  * Shows 83% coverage of the `service` package 
 
 ## Arguments
 
