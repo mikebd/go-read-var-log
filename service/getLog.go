@@ -46,9 +46,12 @@ func GetLog(directoryPath string, filename string, textMatch string, regex *rege
 	if textMatchRequested || regexMatchRequested {
 		// Single pass through the slice for efficiency
 		result = slices.DeleteFunc(result, func(line string) bool {
-			textMatchFailed := textMatchRequested && !strings.Contains(line, textMatch)
-			regexMatchFailed := regexMatchRequested && !regex.MatchString(line)
-			return textMatchFailed || regexMatchFailed
+			// Cheaper tests first, short circuit more expensive tests
+			if textMatchRequested && !strings.Contains(line, textMatch) {
+				return true
+			}
+			// Expensive tests last
+			return regexMatchRequested && !regex.MatchString(line)
 		})
 	}
 
