@@ -9,19 +9,38 @@ import (
 	"strings"
 )
 
+type GetLogResult struct {
+	LogLines []string
+	Strategy string
+	Err      error
+}
+
+func errorGetLogResult(err error) GetLogResult {
+	return GetLogResult{
+		Err: err,
+	}
+}
+
+func successGetLogResult(logLines []string, strategy string) GetLogResult {
+	return GetLogResult{
+		LogLines: logLines,
+		Strategy: strategy,
+	}
+}
+
 // GetLog returns the contents of a log file
 // directoryPath: the path to the directory containing the log file
 // filename: the name of the log file
 // textMatch: a string to search for in the log file (case-sensitive, empty string if not required)
 // regex: a compiled regular expression to search for in the log file (nil if not required)
 // maxLines: the maximum number of lines to return (0 for all lines)
-func GetLog(directoryPath string, filename string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
+func GetLog(directoryPath string, filename string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult {
 	// TODO - REFACTOR: Consider a struct to hold the arguments to this function if the number of parameters grows
 
 	filepath := strings.Join([]string{directoryPath, filename}, "/")
 
 	if !validLogFromName(directoryPath, filename) {
-		return nil, fmt.Errorf("invalid, unreadable or unsupported log file '%s'", filepath)
+		return errorGetLogResult(fmt.Errorf("invalid, unreadable or unsupported log file '%s'", filepath))
 	}
 
 	return selectLogStrategy(filepath)(filepath, textMatch, regex, maxLines)
@@ -30,8 +49,8 @@ func GetLog(directoryPath string, filename string, textMatch string, regex *rege
 func selectLogStrategy(filepath string) getLogStrategy {
 	fileinfo, err := os.Stat(filepath)
 	if err != nil {
-		return func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
-			return nil, fmt.Errorf("unable to stat file '%s': %s", filepath, err)
+		return func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult {
+			return errorGetLogResult(fmt.Errorf("unable to stat file '%s': %s", filepath, err))
 		}
 	}
 	filesize := fileinfo.Size()
@@ -45,9 +64,9 @@ func selectLogStrategy(filepath string) getLogStrategy {
 	return getSmallLog
 }
 
-type getLogStrategy func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error)
+type getLogStrategy func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult
 
-func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
+func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult {
 	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
 	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
 	//       This will be more efficient for large files, but will be more complex to implement and maintain.
@@ -61,7 +80,7 @@ func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLin
 	//           kern.vm_page_free_target: 4000
 	byteSlice, err := os.ReadFile(filepath)
 	if err != nil {
-		return nil, err
+		return errorGetLogResult(err)
 	}
 	result := strings.Split(string(byteSlice), "\n")
 
@@ -87,5 +106,5 @@ func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLin
 		result = result[startIndex:endIndex]
 	}
 
-	return result, nil
+	return successGetLogResult(result, "small")
 }
