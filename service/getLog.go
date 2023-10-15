@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+	"go-read-var-log/config"
+	"io"
+	"log"
 	"os"
 	"slices"
 	"strings"
@@ -38,7 +41,40 @@ func selectLogStrategy(filepath string) getLogStrategy {
 // getLargeLog returns the contents of a large log file that does not easily fit in memory
 func getLargeLog(params *GetLogParams) GetLogResult {
 	const strategy = "large"
-	return errorGetLogResult(strategy, fmt.Errorf("large files are not yet supported"))
+
+	// TODO: What if the result size is larger than the available memory?  e.g. no filters
+	result := make([]string, 0, min(2000, params.MaxLines))
+
+	// Open the file for reading
+	file, errOpen := os.OpenFile(params.filepath(), os.O_RDONLY, 0)
+	if errOpen != nil {
+		return errorGetLogResult(strategy, fmt.Errorf("error opening file '%s': %s", params.filepath(), errOpen))
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Printf("error closing file '%s': %s\n", params.filepath(), err)
+		}
+	}(file)
+
+	// Seek to the end of the file
+	pos, err := file.Seek(0, io.SeekEnd)
+	if err != nil {
+		return errorGetLogResult(strategy, fmt.Errorf("error seeking to end of file '%s': %s", params.filepath(), err))
+	}
+
+	// Seek to the beginning of the next block to scan
+	for pos > 0 {
+		pos, err = file.Seek(-min(pos, config.SeekBytes), io.SeekCurrent)
+		if err != nil {
+			return errorGetLogResult(strategy, fmt.Errorf("error seeking to beginning of next block to scan in file '%s': %s", params.filepath(), err))
+		}
+		// log.Println("position:", pos)
+	}
+
+	// TODO: Need to handle partial lines at block boundaries
+
+	return successGetLogResult(result, strategy)
 }
 
 // getSmallLog returns the contents of a small log file that easily fits in memory

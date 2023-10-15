@@ -6,13 +6,20 @@ import (
 	"strings"
 )
 
+func fileSize(filepath string) (int64, error) {
+	fileinfo, err := os.Stat(filepath)
+	if err != nil {
+		return 0, err
+	}
+	return fileinfo.Size(), nil
+}
+
 // isFileLarge returns true if the file is larger than the configured threshold
 func isFileLarge(filepath string) (bool, error) {
-	fileinfo, err := os.Stat(filepath)
+	filesize, err := fileSize(filepath)
 	if err != nil {
 		return false, err
 	}
-	filesize := fileinfo.Size()
 
 	largeFileBytes := func() int64 {
 		if config.GetArguments() == nil {
