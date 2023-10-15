@@ -26,8 +26,14 @@ func selectLogStrategy(filepath string) getLogStrategy {
 	}
 	filesize := fileinfo.Size()
 
-	// TODO: Make this configurable
-	if filesize < config.LargeFileBytes {
+	largeFileBytes := func() int64 {
+		if config.GetArguments() == nil {
+			return config.LargeFileBytes
+		}
+		return config.GetArguments().LargeFileBytes
+	}()
+
+	if filesize < largeFileBytes {
 		return getSmallLog
 	}
 

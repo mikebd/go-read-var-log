@@ -73,6 +73,7 @@ are naturally in `/var/log`.
 | Argument         | Description                            |
 |------------------|----------------------------------------|
 | `-h` \| `--help` | Print the help message                 |
+| `-l`             | Large File Bytes (default 10,000,000)  |
 | `-lt`            | Log with timestamps (UTC)              |
 | `-n`             | Number of lines to return (default 25) |
 | `-p`             | HTTP Port to listen on (default 8080)  |
