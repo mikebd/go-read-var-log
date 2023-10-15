@@ -9,6 +9,36 @@ import (
 	"strings"
 )
 
+// GetLogParams provides the parameters for GetLog()
+// DirectoryPath: the path to the directory containing the log file
+// Filename: the name of the log file
+// TextMatch: a string to search for in the log file (case-sensitive, empty string if not required)
+// Regex: a compiled regular expression to search for in the log file (nil if not required)
+// MaxLines: the maximum number of lines to return (0 for all lines)
+type GetLogParams struct {
+	DirectoryPath string
+	Filename      string
+	TextMatch     string
+	Regex         *regexp.Regexp
+	MaxLines      int
+}
+
+func (p *GetLogParams) filepath() string {
+	return strings.Join([]string{p.DirectoryPath, p.Filename}, "/")
+}
+
+func (p *GetLogParams) textMatchRequested() bool {
+	return p.TextMatch != ""
+}
+
+func (p *GetLogParams) regexMatchRequested() bool {
+	return p.Regex != nil
+}
+
+func (p *GetLogParams) matchRequested() bool {
+	return p.textMatchRequested() || p.regexMatchRequested()
+}
+
 type GetLogResult struct {
 	LogLines []string
 	Strategy string
@@ -29,27 +59,18 @@ func successGetLogResult(logLines []string, strategy string) GetLogResult {
 }
 
 // GetLog returns the contents of a log file
-// directoryPath: the path to the directory containing the log file
-// filename: the name of the log file
-// textMatch: a string to search for in the log file (case-sensitive, empty string if not required)
-// regex: a compiled regular expression to search for in the log file (nil if not required)
-// maxLines: the maximum number of lines to return (0 for all lines)
-func GetLog(directoryPath string, filename string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult {
-	// TODO - REFACTOR: Consider a struct to hold the arguments to this function if the number of parameters grows
-
-	filepath := strings.Join([]string{directoryPath, filename}, "/")
-
-	if !validLogFromName(directoryPath, filename) {
-		return errorGetLogResult(fmt.Errorf("invalid, unreadable or unsupported log file '%s'", filepath))
+func GetLog(params *GetLogParams) GetLogResult {
+	if !validLogFromName(params.DirectoryPath, params.Filename) {
+		return errorGetLogResult(fmt.Errorf("invalid, unreadable or unsupported log file '%s'", params.filepath()))
 	}
 
-	return selectLogStrategy(filepath)(filepath, textMatch, regex, maxLines)
+	return selectLogStrategy(params.filepath())(params)
 }
 
 func selectLogStrategy(filepath string) getLogStrategy {
 	fileinfo, err := os.Stat(filepath)
 	if err != nil {
-		return func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult {
+		return func(params *GetLogParams) GetLogResult {
 			return errorGetLogResult(fmt.Errorf("unable to stat file '%s': %s", filepath, err))
 		}
 	}
@@ -64,9 +85,9 @@ func selectLogStrategy(filepath string) getLogStrategy {
 	return getSmallLog
 }
 
-type getLogStrategy func(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult
+type getLogStrategy func(params *GetLogParams) GetLogResult
 
-func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLines int) GetLogResult {
+func getSmallLog(params *GetLogParams) GetLogResult {
 	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
 	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
 	//       This will be more efficient for large files, but will be more complex to implement and maintain.
@@ -78,31 +99,29 @@ func getSmallLog(filepath string, textMatch string, regex *regexp.Regexp, maxLin
 	//           kern.vm_page_free_min: 3500
 	//           kern.vm_page_free_reserved: 912
 	//           kern.vm_page_free_target: 4000
-	byteSlice, err := os.ReadFile(filepath)
+	byteSlice, err := os.ReadFile(params.filepath())
 	if err != nil {
 		return errorGetLogResult(err)
 	}
 	result := strings.Split(string(byteSlice), "\n")
 
 	// Filter out lines that do not match the filters
-	textMatchRequested := textMatch != ""
-	regexMatchRequested := regex != nil
-	if textMatchRequested || regexMatchRequested {
+	if params.matchRequested() {
 		// Single pass through the slice for efficiency
 		result = slices.DeleteFunc(result, func(line string) bool {
 			// Cheaper tests first, short circuit more expensive tests
-			if textMatchRequested && !strings.Contains(line, textMatch) {
+			if params.textMatchRequested() && !strings.Contains(line, params.TextMatch) {
 				return true
 			}
 			// Expensive tests last
-			return regexMatchRequested && !regex.MatchString(line)
+			return params.regexMatchRequested() && !params.Regex.MatchString(line)
 		})
 	}
 
 	// Restrict output to at most maxLines
-	if maxLines > 0 && len(result) > maxLines {
+	if params.MaxLines > 0 && len(result) > params.MaxLines {
 		endIndex := len(result) - 1
-		startIndex := max(0, endIndex-maxLines)
+		startIndex := max(0, endIndex-params.MaxLines)
 		result = result[startIndex:endIndex]
 	}
 

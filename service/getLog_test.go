@@ -10,7 +10,11 @@ import (
 // Controllers may reverse the order as required by their clients.
 
 func ExampleGetLog_logDir1_10KiB_log() {
-	getLogResult := GetLog("testdata/logDir1", "10KiB.log", "", nil, 2)
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "10KiB.log",
+		MaxLines:      2,
+	})
 	fmt.Println(getLogResult.Strategy)
 	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
@@ -20,7 +24,11 @@ func ExampleGetLog_logDir1_10KiB_log() {
 }
 
 func ExampleGetLog_logDir1_99lines_log_text_filter() {
-	getLogResult := GetLog("testdata/logDir1", "99lines.log", "9 ", nil, 0)
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "99lines.log",
+		TextMatch:     "9 ",
+	})
 	fmt.Println(getLogResult.Strategy)
 	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
@@ -40,7 +48,11 @@ func ExampleGetLog_logDir1_99lines_log_text_filter() {
 func ExampleGetLog_logDir1_99lines_log_regex_filter() {
 	regex := regexp.MustCompile("[9]\\s.z")
 	// Requesting 0 lines returns all available lines.
-	getLogResult := GetLog("testdata/logDir1", "99lines.log", "", regex, 0)
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "99lines.log",
+		Regex:         regex,
+	})
 	fmt.Println(getLogResult.Strategy)
 	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
@@ -60,7 +72,12 @@ func ExampleGetLog_logDir1_99lines_log_regex_filter() {
 func ExampleGetLog_logDir1_99lines_log_text_and_regex_filter() {
 	regex := regexp.MustCompile("[9]\\s.z")
 	// Requesting 0 lines returns all available lines.
-	getLogResult := GetLog("testdata/logDir1", "99lines.log", "7", regex, 0)
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "99lines.log",
+		TextMatch:     "7",
+		Regex:         regex,
+	})
 	fmt.Println(getLogResult.Strategy)
 	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
@@ -70,7 +87,11 @@ func ExampleGetLog_logDir1_99lines_log_text_and_regex_filter() {
 
 func ExampleGetLog_logDir1_1line_log() {
 	// Requesting more lines than available returns all available lines.
-	getLogResult := GetLog("testdata/logDir1", "1line.log", "", nil, 10)
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "1line.log",
+		MaxLines:      10,
+	})
 	fmt.Println(getLogResult.Strategy)
 	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
