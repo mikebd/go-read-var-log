@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"go-read-var-log/config"
 	"os"
 	"regexp"
 	"slices"
@@ -36,7 +37,7 @@ func selectLogStrategy(filepath string) getLogStrategy {
 	filesize := fileinfo.Size()
 
 	// TODO: Make this configurable
-	if filesize < 10000000 {
+	if filesize < config.LargeFileBytes {
 		return getSmallLog
 	}
 
