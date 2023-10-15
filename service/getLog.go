@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"go-read-var-log/config"
 	"os"
 	"slices"
 	"strings"
@@ -10,52 +9,44 @@ import (
 
 // GetLog returns the contents of a log file
 func GetLog(params *GetLogParams) GetLogResult {
+	const strategy = "unknown"
 	if !validLogFromName(params.DirectoryPath, params.Filename) {
-		return errorGetLogResult(fmt.Errorf("invalid, unreadable or unsupported log file '%s'", params.filepath()))
+		return errorGetLogResult(strategy, fmt.Errorf("invalid, unreadable or unsupported log file '%s'", params.filepath()))
 	}
 
 	return selectLogStrategy(params.filepath())(params)
 }
 
+// selectLogStrategy returns the appropriate strategy for the log file
+// TODO: Consider removing this function and getSmallLog() once getLargeLog() is implemented and thoroughly tested
 func selectLogStrategy(filepath string) getLogStrategy {
-	fileinfo, err := os.Stat(filepath)
+	const strategy = "unknown"
+	isFileLarge, err := isFileLarge(filepath)
 	if err != nil {
 		return func(params *GetLogParams) GetLogResult {
-			return errorGetLogResult(fmt.Errorf("unable to stat file '%s': %s", filepath, err))
+			return errorGetLogResult(strategy, fmt.Errorf("unable to stat file '%s': %s", filepath, err))
 		}
 	}
-	filesize := fileinfo.Size()
 
-	largeFileBytes := func() int64 {
-		if config.GetArguments() == nil {
-			return config.LargeFileBytes
-		}
-		return config.GetArguments().LargeFileBytes
-	}()
-
-	if filesize < largeFileBytes {
-		return getSmallLog
+	if isFileLarge {
+		return getLargeLog
 	}
 
-	// TODO: Add a strategy for large files
 	return getSmallLog
 }
 
+// getLargeLog returns the contents of a large log file that does not easily fit in memory
+func getLargeLog(params *GetLogParams) GetLogResult {
+	const strategy = "large"
+	return errorGetLogResult(strategy, fmt.Errorf("large files are not yet supported"))
+}
+
+// getSmallLog returns the contents of a small log file that easily fits in memory
 func getSmallLog(params *GetLogParams) GetLogResult {
-	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
-	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
-	//       This will be more efficient for large files, but will be more complex to implement and maintain.
-	//       On my machine (non-concurrent):
-	//       - First scan of a 1GB file with 10.5 million lines takes ≈ 2-3s returning all (1) lines matching both
-	//         a textMatch and regex.
-	//       - Subsequent scans of the same file for a different textMatch and regex, returning all (1) matching lines,
-	//         takes ≈ 1.5s.  This is likely due to the file fitting in the filesystem page cache on my system.
-	//           kern.vm_page_free_min: 3500
-	//           kern.vm_page_free_reserved: 912
-	//           kern.vm_page_free_target: 4000
+	const strategy = "small"
 	byteSlice, err := os.ReadFile(params.filepath())
 	if err != nil {
-		return errorGetLogResult(err)
+		return errorGetLogResult(strategy, err)
 	}
 	result := strings.Split(string(byteSlice), "\n")
 
@@ -79,5 +70,5 @@ func getSmallLog(params *GetLogParams) GetLogResult {
 		result = result[startIndex:endIndex]
 	}
 
-	return successGetLogResult(result, "small")
+	return successGetLogResult(result, strategy)
 }

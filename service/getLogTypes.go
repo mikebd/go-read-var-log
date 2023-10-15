@@ -41,9 +41,10 @@ type GetLogResult struct {
 	Err      error
 }
 
-func errorGetLogResult(err error) GetLogResult {
+func errorGetLogResult(strategy string, err error) GetLogResult {
 	return GetLogResult{
-		Err: err,
+		Strategy: strategy,
+		Err:      err,
 	}
 }
 
