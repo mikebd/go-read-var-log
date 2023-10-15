@@ -4,59 +4,9 @@ import (
 	"fmt"
 	"go-read-var-log/config"
 	"os"
-	"regexp"
 	"slices"
 	"strings"
 )
-
-// GetLogParams provides the parameters for GetLog()
-// DirectoryPath: the path to the directory containing the log file
-// Filename: the name of the log file
-// TextMatch: a string to search for in the log file (case-sensitive, empty string if not required)
-// Regex: a compiled regular expression to search for in the log file (nil if not required)
-// MaxLines: the maximum number of lines to return (0 for all lines)
-type GetLogParams struct {
-	DirectoryPath string
-	Filename      string
-	TextMatch     string
-	Regex         *regexp.Regexp
-	MaxLines      int
-}
-
-func (p *GetLogParams) filepath() string {
-	return strings.Join([]string{p.DirectoryPath, p.Filename}, "/")
-}
-
-func (p *GetLogParams) textMatchRequested() bool {
-	return p.TextMatch != ""
-}
-
-func (p *GetLogParams) regexMatchRequested() bool {
-	return p.Regex != nil
-}
-
-func (p *GetLogParams) matchRequested() bool {
-	return p.textMatchRequested() || p.regexMatchRequested()
-}
-
-type GetLogResult struct {
-	LogLines []string
-	Strategy string
-	Err      error
-}
-
-func errorGetLogResult(err error) GetLogResult {
-	return GetLogResult{
-		Err: err,
-	}
-}
-
-func successGetLogResult(logLines []string, strategy string) GetLogResult {
-	return GetLogResult{
-		LogLines: logLines,
-		Strategy: strategy,
-	}
-}
 
 // GetLog returns the contents of a log file
 func GetLog(params *GetLogParams) GetLogResult {
@@ -84,8 +34,6 @@ func selectLogStrategy(filepath string) getLogStrategy {
 	// TODO: Add a strategy for large files
 	return getSmallLog
 }
-
-type getLogStrategy func(params *GetLogParams) GetLogResult
 
 func getSmallLog(params *GetLogParams) GetLogResult {
 	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
