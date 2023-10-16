@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bufio"
 	"fmt"
 	"go-read-var-log/config"
 	"io"
@@ -43,7 +44,8 @@ func getLargeLog(params *GetLogParams) GetLogResult {
 	const strategy = "large"
 
 	// TODO: What if the result size is larger than the available memory?  e.g. no filters
-	result := make([]string, 0, min(2000, params.MaxLines))
+	//       We should cap params.MaxLines to a reasonable value, e.g. 2000
+	var result []string
 
 	// Open the file for reading
 	file, errOpen := os.OpenFile(params.filepath(), os.O_RDONLY, 0)
@@ -64,15 +66,36 @@ func getLargeLog(params *GetLogParams) GetLogResult {
 	}
 
 	// Seek to the beginning of the next block to scan
+	partialFirstLineLength := int64(0)
+	blocksCount := 0 // temp while debugging
 	for pos > 0 {
 		pos, err = file.Seek(-min(pos, config.SeekBytes), io.SeekCurrent)
 		if err != nil {
 			return errorGetLogResult(strategy, fmt.Errorf("error seeking to beginning of next block to scan in file '%s': %s", params.filepath(), err))
 		}
-		// log.Println("position:", pos)
-	}
 
-	// TODO: Need to handle partial lines at block boundaries
+		reader := io.NewSectionReader(file, pos, config.SeekBytes+partialFirstLineLength)
+		scanner := bufio.NewScanner(reader)
+
+		// skip the first line (assume it is a partial line) and ensure it will be captured in the next block
+		scanner.Scan()
+		partialFirstLineLength = int64(len(scanner.Text()))
+
+		var blockResult []string
+		for scanner.Scan() {
+			line := scanner.Text()
+			blockResult = append(blockResult, line) // todo - only if it matches the filters (or there are no filters)
+			//log.Println("block:", blocksCount, " line:", line)	// temp while debugging
+		}
+
+		// prepend blockResult to result
+		result = append(blockResult, result...)
+
+		blocksCount++
+		if blocksCount > 3 {
+			break // temp while debugging
+		}
+	}
 
 	return successGetLogResult(result, strategy)
 }
