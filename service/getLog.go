@@ -67,7 +67,6 @@ func getLargeLog(params *GetLogParams) GetLogResult {
 
 	// Seek to the beginning of the next block to scan
 	partialFirstLineLength := int64(0)
-	blocksCount := 0 // temp while debugging
 	for pos > 0 {
 		pos, err = file.Seek(-min(pos, config.SeekBytes), io.SeekCurrent)
 		if err != nil {
@@ -84,17 +83,22 @@ func getLargeLog(params *GetLogParams) GetLogResult {
 		var blockResult []string
 		for scanner.Scan() {
 			line := scanner.Text()
-			blockResult = append(blockResult, line) // todo - only if it matches the filters (or there are no filters)
-			//log.Println("block:", blocksCount, " line:", line)	// temp while debugging
+
+			if params.matchRequested() {
+				// Cheaper tests first, short circuit more expensive tests
+				if params.textMatchRequested() && strings.Contains(line, params.TextMatch) {
+					blockResult = append(blockResult, line)
+				} else if params.regexMatchRequested() && params.Regex.MatchString(line) {
+					blockResult = append(blockResult, line)
+				}
+			} else {
+				blockResult = append(blockResult, line)
+			}
 		}
 
+		// TODO: limit result size to params.MaxLines
 		// prepend blockResult to result
 		result = append(blockResult, result...)
-
-		blocksCount++
-		if blocksCount > 3 {
-			break // temp while debugging
-		}
 	}
 
 	return successGetLogResult(result, strategy)
