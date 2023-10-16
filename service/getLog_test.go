@@ -47,7 +47,7 @@ func ExampleGetLog_logDir1_99lines_log_text_filter() {
 
 func ExampleGetLog_logDir1_99lines_log_regex_filter() {
 	regex := regexp.MustCompile("[9]\\s.z")
-	// Requesting 0 lines returns all available lines.
+	// Requesting 0 lines returns all available lines (up to config.MaxResultLines).
 	getLogResult := GetLog(&GetLogParams{
 		DirectoryPath: "testdata/logDir1",
 		Filename:      "99lines.log",
