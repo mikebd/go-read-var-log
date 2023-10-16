@@ -99,7 +99,9 @@ func getLargeLog(params *GetLogParams) GetLogResult {
 		result = append(blockResult, result...)
 	}
 
-	return successGetLogResult(reduceToMaxLines(result, maxResultLines), strategy)
+	result = reduceToMaxLines(result, maxResultLines)
+
+	return successGetLogResult(result, strategy)
 }
 
 // getSmallLog returns the contents of a small log file that easily fits in memory
@@ -111,20 +113,22 @@ func getSmallLog(params *GetLogParams) GetLogResult {
 	}
 	result := strings.Split(string(byteSlice), "\n")
 
-	// Filter out lines that do not match the filters
-	if params.matchRequested() {
-		// Single pass through the slice for efficiency
-		result = slices.DeleteFunc(result, func(line string) bool {
-			// Cheaper tests first, short circuit more expensive tests
-			if params.textMatchRequested() && !strings.Contains(line, params.TextMatch) {
-				return true
-			}
-			// Expensive tests last
-			return params.regexMatchRequested() && !params.Regex.MatchString(line)
-		})
-	}
+	// Single pass through the slice for efficiency
+	result = slices.DeleteFunc(result, func(line string) bool {
+		// Cheaper tests first, short circuit more expensive tests
+		if len(line) == 0 {
+			return true
+		}
+		if params.textMatchRequested() && !strings.Contains(line, params.TextMatch) {
+			return true
+		}
+		// Expensive tests last
+		return params.regexMatchRequested() && !params.Regex.MatchString(line)
+	})
 
-	return successGetLogResult(reduceToMaxLines(result, maxLines(params)), strategy)
+	result = reduceToMaxLines(result, maxLines(params))
+
+	return successGetLogResult(result, strategy)
 }
 
 func maxLines(params *GetLogParams) int {
@@ -135,10 +139,11 @@ func maxLines(params *GetLogParams) int {
 }
 
 func reduceToMaxLines(result []string, maxLines int) []string {
-	if len(result) > maxLines {
-		endIndex := len(result) - 1
-		startIndex := max(0, endIndex-maxLines)
-		result = result[startIndex:endIndex]
+	if len(result) <= maxLines {
+		return result
 	}
-	return result
+
+	endIndex := len(result)
+	startIndex := max(0, endIndex-maxLines)
+	return result[startIndex:endIndex]
 }
