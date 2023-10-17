@@ -1,55 +1,63 @@
 package service
 
 import (
-	"fmt"
+	"testing"
 )
 
 // based on config.MaxResultLines = 2_000
 
-func Example_maxLines_none() {
-	fmt.Println(maxLines(&GetLogParams{}))
-	// Output:
-	// 2000
-}
-
-func Example_maxLines_zero() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: 0}))
-	// Output:
-	// 2000
-}
-
-func Example_maxLines_negative() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: -1}))
-	// Output:
-	// 2000
-}
-
-func Example_maxLines_one() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: 1}))
-	// Output:
-	// 1
-}
-
-func Example_maxLines_two() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: 2}))
-	// Output:
-	// 2
-}
-
-func Example_maxLines_nineteen_ninety_nine() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: 1_999}))
-	// Output:
-	// 1999
-}
-
-func Example_maxLines_two_thousand() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: 2_000}))
-	// Output:
-	// 2000
-}
-
-func Example_maxLines_two_thousand_one() {
-	fmt.Println(maxLines(&GetLogParams{MaxLines: 2_001}))
-	// Output:
-	// 2000
+func Test_maxLines(t *testing.T) {
+	tests := []struct {
+		name   string
+		params *GetLogParams
+		want   int
+	}{
+		{
+			name:   "none",
+			params: &GetLogParams{},
+			want:   2000,
+		},
+		{
+			name:   "zero",
+			params: &GetLogParams{MaxLines: 0},
+			want:   2000,
+		},
+		{
+			name:   "negative",
+			params: &GetLogParams{MaxLines: -1},
+			want:   2000,
+		},
+		{
+			name:   "one",
+			params: &GetLogParams{MaxLines: 1},
+			want:   1,
+		},
+		{
+			name:   "two",
+			params: &GetLogParams{MaxLines: 2},
+			want:   2,
+		},
+		{
+			name:   "nineteen_ninety_nine",
+			params: &GetLogParams{MaxLines: 1_999},
+			want:   1999,
+		},
+		{
+			name:   "two_thousand",
+			params: &GetLogParams{MaxLines: 2_000},
+			want:   2000,
+		},
+		{
+			name:   "two_thousand_one",
+			params: &GetLogParams{MaxLines: 2_001},
+			want:   2000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := maxLines(tt.params); got != tt.want {
+				t.Errorf("maxLines() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
