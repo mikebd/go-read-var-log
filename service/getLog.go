@@ -83,14 +83,15 @@ func getLargeLog(params *GetLogParams) GetLogResult {
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if params.matchRequested() {
-				// Cheaper tests first, short circuit more expensive tests
-				if params.textMatchRequested() && strings.Contains(line, params.TextMatch) {
-					blockResult = append(blockResult, line)
-				} else if params.regexMatchRequested() && params.Regex.MatchString(line) {
-					blockResult = append(blockResult, line)
-				}
-			} else {
+			matched := true
+			// Cheaper tests first, short circuit more expensive tests
+			if params.textMatchRequested() && !strings.Contains(line, params.TextMatch) {
+				matched = false
+			}
+			if matched && params.regexMatchRequested() && !params.Regex.MatchString(line) {
+				matched = false
+			}
+			if matched {
 				blockResult = append(blockResult, line)
 			}
 		}

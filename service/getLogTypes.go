@@ -31,10 +31,6 @@ func (p *GetLogParams) regexMatchRequested() bool {
 	return p.Regex != nil
 }
 
-func (p *GetLogParams) matchRequested() bool {
-	return p.textMatchRequested() || p.regexMatchRequested()
-}
-
 type GetLogResult struct {
 	LogLines []string
 	Strategy string
