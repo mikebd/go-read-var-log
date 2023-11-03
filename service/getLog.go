@@ -1,66 +1,150 @@
 package service
 
 import (
+	"bufio"
 	"fmt"
+	"go-read-var-log/config"
+	"io"
+	"log"
 	"os"
-	"regexp"
 	"slices"
 	"strings"
 )
 
 // GetLog returns the contents of a log file
-// directoryPath: the path to the directory containing the log file
-// filename: the name of the log file
-// textMatch: a string to search for in the log file (case-sensitive, empty string if not required)
-// regex: a compiled regular expression to search for in the log file (nil if not required)
-// maxLines: the maximum number of lines to return (0 for all lines)
-func GetLog(directoryPath string, filename string, textMatch string, regex *regexp.Regexp, maxLines int) ([]string, error) {
-	// TODO - REFACTOR: Consider a struct to hold the arguments to this function if the number of parameters grows
-
-	filepath := strings.Join([]string{directoryPath, filename}, "/")
-
-	if !validLogFromName(directoryPath, filename) {
-		return nil, fmt.Errorf("invalid, unreadable or unsupported log file '%s'", filepath)
+func GetLog(params *GetLogParams) GetLogResult {
+	const strategy = "unknown"
+	if !validLogFromName(params.DirectoryPath, params.Filename) {
+		return errorGetLogResult(strategy, fmt.Errorf("invalid, unreadable or unsupported log file '%s'", params.filepath()))
 	}
 
-	// TODO: This is the simplest possible approach.  It will likely not work well for extremely large files.
-	//       Consider seek() near the end of the file, backwards iteratively, until the desired number of lines is found.
-	//       This will be more efficient for large files, but will be more complex to implement and maintain.
-	//       On my machine (non-concurrent):
-	//       - First scan of a 1GB file with 10.5 million lines takes ≈ 2-3s returning all (1) lines matching both
-	//         a textMatch and regex.
-	//       - Subsequent scans of the same file for a different textMatch and regex, returning all (1) matching lines,
-	//         takes ≈ 1.5s.  This is likely due to the file fitting in the filesystem page cache on my system.
-	//           kern.vm_page_free_min: 3500
-	//           kern.vm_page_free_reserved: 912
-	//           kern.vm_page_free_target: 4000
-	byteSlice, err := os.ReadFile(filepath)
+	return selectLogStrategy(params.filepath())(params)
+}
+
+// selectLogStrategy returns the appropriate strategy for the log file
+// TODO: Consider removing this function and getSmallLog() once getLargeLog() is implemented and thoroughly tested
+func selectLogStrategy(filepath string) getLogStrategy {
+	const strategy = "unknown"
+	isFileLarge, err := isFileLarge(filepath)
 	if err != nil {
-		return nil, err
+		return func(params *GetLogParams) GetLogResult {
+			return errorGetLogResult(strategy, fmt.Errorf("unable to stat file '%s': %s", filepath, err))
+		}
+	}
+
+	if isFileLarge {
+		return getLargeLog
+	}
+
+	return getSmallLog
+}
+
+// getLargeLog returns the contents of a large log file that does not easily fit in memory
+func getLargeLog(params *GetLogParams) GetLogResult {
+	const strategy = "large"
+
+	maxResultLines := maxLines(params)
+	result := make([]string, 0, maxResultLines*2)
+
+	// Open the file for reading
+	file, errOpen := os.OpenFile(params.filepath(), os.O_RDONLY, 0)
+	if errOpen != nil {
+		return errorGetLogResult(strategy, fmt.Errorf("error opening file '%s': %s", params.filepath(), errOpen))
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Printf("error closing file '%s': %s\n", params.filepath(), err)
+		}
+	}(file)
+
+	// Seek to the end of the file
+	pos, err := file.Seek(0, io.SeekEnd)
+	if err != nil {
+		return errorGetLogResult(strategy, fmt.Errorf("error seeking to end of file '%s': %s", params.filepath(), err))
+	}
+
+	// Seek to the beginning of the next block to scan
+	partialFirstLineLength := int64(0)
+	for pos > 0 && len(result) < maxResultLines {
+		pos, err = file.Seek(-min(pos, config.LargeFileSeekBytes), io.SeekCurrent)
+		if err != nil {
+			return errorGetLogResult(strategy, fmt.Errorf("error seeking to beginning of next block to scan in file '%s': %s", params.filepath(), err))
+		}
+
+		reader := io.NewSectionReader(file, pos, config.LargeFileSeekBytes+partialFirstLineLength)
+		scanner := bufio.NewScanner(reader)
+
+		// skip the first line (assume it is a partial line) and ensure it will be captured in the next block
+		scanner.Scan()
+		partialFirstLineLength = int64(len(scanner.Text()))
+
+		blockResult := make([]string, 0, maxResultLines)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			matched := true
+			// Cheaper tests first, short circuit more expensive tests
+			if params.textMatchRequested() && !strings.Contains(line, params.TextMatch) {
+				matched = false
+			}
+			if matched && params.regexMatchRequested() && !params.Regex.MatchString(line) {
+				matched = false
+			}
+			if matched {
+				blockResult = append(blockResult, line)
+			}
+		}
+
+		// prepend blockResult to result
+		result = append(blockResult, result...)
+	}
+
+	result = reduceToMaxLines(result, maxResultLines)
+
+	return successGetLogResult(result, strategy)
+}
+
+// getSmallLog returns the contents of a small log file that easily fits in memory
+func getSmallLog(params *GetLogParams) GetLogResult {
+	const strategy = "small"
+	byteSlice, err := os.ReadFile(params.filepath())
+	if err != nil {
+		return errorGetLogResult(strategy, err)
 	}
 	result := strings.Split(string(byteSlice), "\n")
 
-	// Filter out lines that do not match the filters
-	textMatchRequested := textMatch != ""
-	regexMatchRequested := regex != nil
-	if textMatchRequested || regexMatchRequested {
-		// Single pass through the slice for efficiency
-		result = slices.DeleteFunc(result, func(line string) bool {
-			// Cheaper tests first, short circuit more expensive tests
-			if textMatchRequested && !strings.Contains(line, textMatch) {
-				return true
-			}
-			// Expensive tests last
-			return regexMatchRequested && !regex.MatchString(line)
-		})
+	// Single pass through the slice for efficiency
+	result = slices.DeleteFunc(result, func(line string) bool {
+		// Cheaper tests first, short circuit more expensive tests
+		if len(line) == 0 {
+			return true
+		}
+		if params.textMatchRequested() && !strings.Contains(line, params.TextMatch) {
+			return true
+		}
+		// Expensive tests last
+		return params.regexMatchRequested() && !params.Regex.MatchString(line)
+	})
+
+	result = reduceToMaxLines(result, maxLines(params))
+
+	return successGetLogResult(result, strategy)
+}
+
+func maxLines(params *GetLogParams) int {
+	if params.MaxLines > 0 {
+		return min(params.MaxLines, config.MaxResultLines)
+	}
+	return config.MaxResultLines
+}
+
+func reduceToMaxLines(result []string, maxLines int) []string {
+	if len(result) <= maxLines {
+		return result
 	}
 
-	// Restrict output to at most maxLines
-	if maxLines > 0 && len(result) > maxLines {
-		endIndex := len(result) - 1
-		startIndex := max(0, endIndex-maxLines)
-		result = result[startIndex:endIndex]
-	}
-
-	return result, nil
+	endIndex := len(result)
+	startIndex := max(0, endIndex-maxLines)
+	return result[startIndex:endIndex]
 }

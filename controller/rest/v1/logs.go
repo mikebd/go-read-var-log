@@ -26,8 +26,9 @@ func GetLogs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	start := time.Now()
 	linesReturned := 0
+	strategy := "unknown"
 	defer func() {
-		log.Println(r.URL.RequestURI(), "returned", linesReturned, "lines in", time.Since(start))
+		log.Println(r.URL.RequestURI(), "returned", linesReturned, "lines using", strategy, "strategy in", time.Since(start))
 	}()
 
 	logFilename := p.ByName("log")
@@ -46,7 +47,15 @@ func GetLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	maxLines, err := util.PositiveIntParamStrict(w, r, config.GetArguments().NumberOfLogLines, "n")
 	if err == nil {
-		logEvents, err := service.GetLog(config.LogDirectory, logFilename, textMatch, regex, maxLines)
+		getLogResult := service.GetLog(&service.GetLogParams{
+			DirectoryPath: config.LogDirectory,
+			Filename:      logFilename,
+			TextMatch:     textMatch,
+			Regex:         regex,
+			MaxLines:      maxLines,
+		})
+		logEvents, err := getLogResult.LogLines, getLogResult.Err
+		strategy = getLogResult.Strategy
 
 		if err == nil {
 			linesReturned = len(logEvents)

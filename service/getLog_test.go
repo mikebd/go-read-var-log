@@ -10,17 +10,29 @@ import (
 // Controllers may reverse the order as required by their clients.
 
 func ExampleGetLog_logDir1_10KiB_log() {
-	lines, _ := GetLog("testdata/logDir1", "10KiB.log", "", nil, 2)
-	fmt.Println(strings.Join(lines, "\n"))
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "10KiB.log",
+		MaxLines:      2,
+	})
+	fmt.Println(getLogResult.Strategy)
+	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
+	// small
 	// 2023-10-06T15:18:24.408740Z|info |olaret esanus ivo hey enug tewos ebad it u tuge po elora e iwemat o
 	// 2023-10-06T15:18:24.408762Z|debug|tucev uho e u ela opif ce igodeto hudegor ivosu ehab eaunopi balohan tagused gicefas
 }
 
 func ExampleGetLog_logDir1_99lines_log_text_filter() {
-	lines, _ := GetLog("testdata/logDir1", "99lines.log", "9 ", nil, 0)
-	fmt.Println(strings.Join(lines, "\n"))
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "99lines.log",
+		TextMatch:     "9 ",
+	})
+	fmt.Println(getLogResult.Strategy)
+	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
+	// small
 	// line 9 yz
 	// line 19 yz
 	// line 29 yz
@@ -35,10 +47,16 @@ func ExampleGetLog_logDir1_99lines_log_text_filter() {
 
 func ExampleGetLog_logDir1_99lines_log_regex_filter() {
 	regex := regexp.MustCompile("[9]\\s.z")
-	// Requesting 0 lines returns all available lines.
-	lines, _ := GetLog("testdata/logDir1", "99lines.log", "", regex, 0)
-	fmt.Println(strings.Join(lines, "\n"))
+	// Requesting 0 lines returns all available lines (up to config.MaxResultLines).
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "99lines.log",
+		Regex:         regex,
+	})
+	fmt.Println(getLogResult.Strategy)
+	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
+	// small
 	// line 9 yz
 	// line 19 yz
 	// line 29 yz
@@ -54,16 +72,29 @@ func ExampleGetLog_logDir1_99lines_log_regex_filter() {
 func ExampleGetLog_logDir1_99lines_log_text_and_regex_filter() {
 	regex := regexp.MustCompile("[9]\\s.z")
 	// Requesting 0 lines returns all available lines.
-	lines, _ := GetLog("testdata/logDir1", "99lines.log", "7", regex, 0)
-	fmt.Println(strings.Join(lines, "\n"))
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "99lines.log",
+		TextMatch:     "7",
+		Regex:         regex,
+	})
+	fmt.Println(getLogResult.Strategy)
+	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
+	// small
 	// line 79 yz
 }
 
 func ExampleGetLog_logDir1_1line_log() {
 	// Requesting more lines than available returns all available lines.
-	lines, _ := GetLog("testdata/logDir1", "1line.log", "", nil, 10)
-	fmt.Println(strings.Join(lines, "\n"))
+	getLogResult := GetLog(&GetLogParams{
+		DirectoryPath: "testdata/logDir1",
+		Filename:      "1line.log",
+		MaxLines:      10,
+	})
+	fmt.Println(getLogResult.Strategy)
+	fmt.Println(strings.Join(getLogResult.LogLines, "\n"))
 	// Output:
+	// small
 	// 2023-10-06T15:18:24.406350Z|debug|toyeni vate riwehu ato ped afe ral bo h redi esohet sir moyireh nema lidef
 }
