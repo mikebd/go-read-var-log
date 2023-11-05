@@ -98,7 +98,6 @@ Test data files are stored under `testdata` directories, which are ignored by `g
 
 * `go test ./... -count=-1` - Run all unit tests
 * `go test ./... -count=-1 -cover` - Run all unit tests with coverage
-  * Shows 83% coverage of the `service` package 
 
 ## Sample Output
 
