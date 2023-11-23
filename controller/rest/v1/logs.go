@@ -16,7 +16,9 @@ import (
 // GetLogs handles GET /api/v1/logs and returns a list of log files in the log directory
 func GetLogs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()
-	defer log.Println(r.URL.RequestURI(), "took", time.Since(start))
+	defer func() {
+		log.Println(r.URL.RequestURI(), "took", time.Since(start).Round(time.Millisecond))
+	}()
 
 	logFilenames, err := service.ListLogs(config.LogDirectory)
 	util.RenderTextPlain(w, logFilenames, err)
